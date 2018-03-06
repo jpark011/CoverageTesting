@@ -22,54 +22,67 @@
 from __future__ import print_function
 
 import wlang.ast
-            
+
 class UndefVisitor (wlang.ast.AstVisitor):
     """Computes all variables that are used before being defined"""
     def __init__ (self):
         super (UndefVisitor, self).__init__ ()
-        pass
+        self.defined = set ()
+        self.undefined = set ()
 
     def check (self, node):
         """Check for undefined variables starting from a given AST node"""
         # do the necessary setup/arguments and call self.visit (node, args)
-        pass
+        self.visit(node)
 
     def get_undefs (self):
         """Return the set of all variables that are used before being defined
            in the program.  Available only after a call to check()
         """
-        pass
-        
+        return self.undefined
+
     def visit_StmtList (self, node, *args, **kwargs):
-        pass
-    
+        if node.stmts is None or len (node.stmts) == 0:
+            return
+        for s in node.stmts:
+            self.visit(s, args)
+
     def visit_IntVar (self, node, *args, **kwargs):
-        pass
-            
+        if node.name not in self.defined:
+            self.undefined.add(wlang.ast.IntVar(node.name))
+
     def visit_Const (self, node, *args, **kwargs):
         pass
-    
+
     def visit_Stmt (self, node, *args, **kwargs):
         pass
-    
+
     def visit_AsgnStmt (self, node, *args, **kwargs):
-        pass
+        if node.lhs.name not in self.defined:
+            self.defined.add(node.lhs.name)
+        self.visit(node.rhs)
 
     def visit_Exp (self, node, *args, **kwargs):
-        pass
-    
+        for a in node.args:
+            self.visit(a)
+
     def visit_HavocStmt (self, node, *args, **kwargs):
-        pass
-    
+        for v in node.vars:
+            if v not in self.defined:
+                self.defined.add(v.name)
+
     def visit_AssertStmt (self, node, *args, **kwargs):
-        pass
-    
+        self.visit(node.cond)
+
     def visit_AssumeStmt (self, node, *args, **kwargs):
-        pass
+        self.visit(node.cond)
 
     def visit_IfStmt (self, node, *args, **kwargs):
-        pass
+        self.visit(node.cond)
+        self.visit(node.then_stmt)
+        if node.has_else():
+            self.visit(node.else_stmt)
 
     def visit_WhileStmt (self, node, *args, **kwargs):
-        pass
-        
+        self.visit(node.cond)
+        self.visit(node.body)
